@@ -182,4 +182,10 @@ token=qwerty&offer_id=1313&name=sergey
 
 ### Пример
 
-![result](result.png)
+POST
+
+![POST](result_post.png)
+
+GET
+
+![GET](result_get.png)
