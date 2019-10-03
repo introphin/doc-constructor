@@ -1,16 +1,17 @@
 # Конструктор
 
-Конструктор создан для указания параметров формирующих
-1. Запрос для передачи рекламодателям информации о заказах и проверки ответа на этот запрос
-2. Сравнения статуса результатов обработки заказов рекламодателем
+Конструктор используется для:
+1. Формирования запроса от CRM Dr.Cash к серверу рекламодателя.
+2. Сравнения статуса рекламодателя с внутренним статусом CRM Dr.Cash, при получении постбека от рекламодателя в CRM Dr.Cash
 
 # ТЕОРИЯ
 ### Типы запросов
-Обязательно соответствие типа запроса указанному типу запросов рекламодателя.
+В конструкторе поддерживает GET и POST запросы. \
+> **Обязательно соответствие типа запроса в конструкторе указанному типу запросов у рекламодателя.**
 
 1. GET 
 
-При передаче данных методом **GET**, передаваемые параметры задаются в адресной строке 
+При передаче данных методом **GET**, передаваемые параметры задаются в адресной строке
 (секция **QUERY** в конструкторе).
 
 2. POST 
@@ -21,24 +22,24 @@
 И могут как полностью отсутствовать в POST запросе к конкретному рекламодателю, так и присутствовать одновременно.
 
 ## Заголовки / Headers
-Для **POST** запросов обязателен **тип запроса**.
+Для **POST** запросов обязателен **тип контента**.
 
-Тип запроса указывается в заголовке (**header**) с названием **Content-type** \
-В конструкторе возможен выбор из 2 типов запросов:
+Тип контента указывается в заголовке (**header**) под ключем **Content-type** \
+В конструкторе возможен выбор из 2 типов контентов:
 1. application/json
 2. application/x-www-form-urlencoded 
 
-Так же в заголовках возможна передача аутентификационных JWT токенов \
-Пример: \
-Authentication: bearer JWT.TOKEN.QWERTY \
+Так же в заголовках при необходимости возможна передача любых необходимых заголовков. \
+
+Для ключа заголовков работает автоподставка при начале ввода символов, если ключ заголовка стандартный.
+
+Пример:  передача content-type и авторизационного токена \
 ![headers](headers.png)
 
-Возможны и иные обязательные заголовки для конкретного рекламодателя. \
-Для заголовков работает автоподставка ключа при вводе символа, если ключ заголовка стандартный.
-
 ## Параметры запроса
-Параметры могут быть переданы в Query либо в Body секции.
+Параметры могут быть переданы в Query либо в Body секции. \
 
+### 
 ### Шаблоны для передаваемых параметров
 Для передачи данных c автоподстановкой из CRM, используются шаблоны, шаблон указывается в двойных фигурных скобках. \
 Пример: {{template}}
@@ -46,32 +47,25 @@ Authentication: bearer JWT.TOKEN.QWERTY \
 #### Общие шаблоны
 Для общих щаблонов работает автоподстановка
 ```
-{{offer.hash}}
-{{offer.price}}
-{{order.uuid}}
-{{order.visit_uuid}}
-{{order.aff_user_id}}
-{{client.name}}
-{{client.surname}}
-{{client.phone}}
-{{client.phoneE164}}
-{{client.email}}
-{{client.geo_code}}
-{{client.address}}
-{{client.country}}
-{{client.city}}
-{{client.postcode}}
-{{client.ip}}
+{{offer.hash}}        // код продукта из настроек оффера
+{{order.uuid}}        // идентификатор заказа
+{{order.visit_uuid}}  // идентификатор визита/клика
+{{order.aff_user_id}} // идентификатор вебмастера
+{{client.name}}       // имя клиента
+{{client.surname}}    // фамилия клиента
+{{client.phone}}      // телефон клиента
+{{client.phoneE164}}  // телефон клиента в международном формате Е164 
+{{client.email}}      // email клиента
+{{client.geo_code}}   // двухбуквенный код страны клиента (ISO 3166-1 alpha-2)
+{{client.address}}    // адрес клиента (на данный момент поле пустое)
+{{client.country}}    // страна клиента (на данный момент поле пустое)
+{{client.city}}       // город клиента (на данный момент поле пустое)
+{{client.postcode}}   // почтовый индекс клиента (на данный момент поле пустое)
+{{client.ip}}         // IP адрес клиента (на данный момент поле пустое)
 ```
 
 #### Уникальные шаблоны для конкретных рекламодателей
-```
-{{magic.hygeia.code}}
-{{admade.geocode}}
-{{lucky.online.goals}}
-{{nutralyfe.additional.attributes}}
-{{everad.ip}}
-```
+При очень специфических типах запросов возможно создание индивидуальных шаблонов.
 
 ### Query
 **Query** параметры передаются в виде дополнения к **адресной строке** (**url**)
@@ -123,6 +117,51 @@ name = sergey
 для x-www-form-urlencoded не важен тип данных (string, integer, boolean)
 ```
 token=qwerty&offer_id=1313&name=sergey
+```
+
+#### 3. Добавление body параметров
+Для передачи параметров вида "ключ"="значение" достаточно указать ключ в поле key, а значение в поле value. \
+Для передачи параметров виде отличном от "ключ"="значение" используются следующие конструкции: \
+
+##### * x-www-form-urlencoded:
+
+![urlencoded](urlencoded.png)
+
+```
+test_object[name]=Test+Qwerty&test_object[phone]=%2B79999999999&test_array[][name]=Test+Querty&test_array[][phone]=%2B79999999999&test_object_with_object[client][name]=Test+Querty&test_object_with_object[client][phone]=%2B79999999999&test_object_with_objects[client][name]=Test+Querty&test_object_with_objects[order][uuid]=c98a0df8-9796-4f3f-8a7d-60e81a53d199
+```
+
+##### * json: 
+
+![json](json.png)
+
+```json
+   {
+     "test_array": [
+       {
+         "name": "Test Qwerty",
+         "phone": "+79999999999"
+       }
+     ],
+     "test_object": {
+       "name": "Test Qwerty",
+       "phone": "+79999999999"
+     },
+     "test_object_with_object": {
+       "client": {
+         "name": "Test Qwerty",
+         "phone": "+79999999999"
+       }
+     },
+     "test_object_with_objects": {
+       "client": {
+         "name": "Test Qwerty"
+       },
+       "order": {
+         "uuid": "ab08e872-f78d-4f0c-9ebc-7ebb7ddb14eb"
+       }
+     }
+   }
 ```
 
 # Создание конструктора
@@ -186,6 +225,30 @@ POST
 
 ![POST](result_post.png)
 
+равноценно curl запросу
+```
+    curl -X POST \
+      'http://example.com?token=qwerty' \
+      -H 'Authorization: Bearer JWT.TOKEN.QWERTY' \
+      -H 'Content-Type: application/json' \
+      -d '{
+    	"click_id": "test uuid",
+    	"user_id": 1337,
+    	"name": "Test Qwerty",
+    	"phone": "+79999999999",
+    	"affiliate_id": "1",
+    	"geo": "RU",
+    	"test": false
+    }'
+```
 GET
 
 ![GET](result_get.png)
+
+равноценно cURL запросу
+```
+curl -X GET \
+  'http://example.com?token=qwerty&name=Test%20Qwerty&phone=+79999999999' \
+  -H 'Authorization: Bearer JWT.TOKEN.QWERTY' \
+  -H 'Content-Type: application/json' \
+```
